@@ -1,0 +1,71 @@
+(i) Installation Instructions:
+------------------------------
+
+1. Download the package from http://www.aspect-sdm.org/Parallel-R/
+2. Perform installation by executing the following command
+	R INSTALL taskPR_ver.tar.gz
+   
+   If the MPI is installed in a non-default directory
+   you need to provide the MPI directory path during 
+   installation as shown below
+
+   R INSTALL --configure-args=--with-mpi=/mpi/home/path 
+ 					taskPR_ver.tar.gz
+
+
+(ii) Parallel-R Setup:
+----------------------
+There are two options for starting the Parallel-R engine.
+
+1. Calling "StartPE" with the "spawn" option true.  This will
+   use a MPI-2 function call to spawn the worker processes 
+   and setup the Parallel-R environment.
+
+	StartPE ()
+   
+   By default StartPE function has the "spawn" option set to
+   true and a pair of worker processes are spawned. 
+
+2. Without MPI-2 library support the Parallel-R setup can be
+   achieved in 2 steps
+
+   a. In the main Parallel-R process call StartPE() function
+      with the spawn option "FALSE"
+
+   b. Then startup individual R processes and execute the
+      function StartWorker(). 
+   
+   Please refer to the StartPE() and StartWorker() documentation 
+   for more information. 
+
+      
+(iii) Execution Instructions:
+-----------------------------
+
+1. Functions that needs to be run in parallel should be 
+   enclosed within function PE. Note that all the parallel
+   tasks should follow the following form
+
+	a <- func(x,y,...)
+
+	All statements must have an output!
+	Assignment should only be done using "<-" or "->".
+	Using "=" for assignment will NOT work.
+
+   To execute the above function as a parallel task it should
+   be input as shown below in Parallel-R
+
+	PE(a <- func(x,y,...))
+
+2. The function is executed by the parallel engine in the background.
+   To retrieve the result, use POBJ() function call.
+
+  For example:
+    StartPE()
+	PE(a <- function(x,y))
+	POBJ(a)
+	print(a)
+
+  Output "a" from the above parallel task is retrieved, but NOT returned
+  from the POBJ function.
+

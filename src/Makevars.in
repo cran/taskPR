@@ -1,0 +1,4 @@
+# -*- Makefile -*-  vim : ft = make
+
+PKG_CFLAGS   = @PKG_CFLAGS@ -DPARALLEL_R_PACKAGE
+PKG_LIBS     = @PKG_LIBS@ 
