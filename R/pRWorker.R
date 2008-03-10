@@ -13,7 +13,7 @@ StartWorker <- function(host = "localhost", port=32000, retries=2, sleeptime=1, 
 	while (1 == 1) {
 		PRWglobal = 0
 		PRWinputs = "PRWinputs"
-		print("Waiting for job")
+		if (!quiet) print("Waiting for job")
 		NumberOfInputs = readBin(PRWcon, "integer")
 		if (NumberOfInputs == -1) {
 			print("Received exit signal.")
@@ -61,10 +61,8 @@ StartWorker <- function(host = "localhost", port=32000, retries=2, sleeptime=1, 
 		answer = try(eval(PRWexpr))
 		rm(list=PRWinputs, envir=parent.frame())
 		t = .Call("R_serialize", answer, NULL, FALSE, NULL, PACKAGE="base")
-		if (!quiet) print(paste("Length of answer =",
-				.Call("RStrLength", t, PACKAGE="taskPR")))
-		writeBin(as.integer(.Call("RStrLength", t, PACKAGE="taskPR")),
-				PRWcon)
+		if (!quiet) print(paste("Length of answer =",length(t)))
+		writeBin(as.integer(length(t)), PRWcon)
 		rm(t)
 		serialize(answer, PRWcon)
 		rm(answer)

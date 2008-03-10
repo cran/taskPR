@@ -23,12 +23,19 @@
  * to all processes, and then all processes do an exec call on the first
  * argument, passing along all the rest of the arguments.
  */
-/*  $Author: bauer $
-    $Date: 2004/07/09 13:03:55 $
-    $Revision: 1.3 $
+/*  $Author: david $
+    $Date: 2008-03-03 15:15:01 $
+    $Revision: 1.4 $
  */
-#include <mpi.h>
 #include <stdio.h>
+#ifndef HAVE_MPI
+int main(int argc, char *argv[]) {
+	fprintf(stderr, "**** Program disabled due to configure not finding MPI. ****\n");
+	fprintf(stderr, "If you need this functionality, please rebuild the package with MPI enabled.\n");
+	return -1;
+}
+#else
+#include <mpi.h>
 #include <unistd.h>
 #include <malloc.h>
 #include <string.h>
@@ -86,4 +93,5 @@ int main(int argc, char *argv[]) {
 
 	return -4;
 }
+#endif
 

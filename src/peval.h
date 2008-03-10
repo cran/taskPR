@@ -15,9 +15,9 @@
 *   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 **************************************************************************** */
 /* peval.h  Parallel Evaluation header file */
-/*  $Author: bauer $
-    $Date: 2004/07/26 13:26:30 $
-    $Revision: 1.10 $
+/*  $Author: david $
+    $Date: 2008-03-03 19:28:13 $
+    $Revision: 1.11 $
  */
 #ifndef _PEVAL_H_
 #define _PEVAL_H_
@@ -35,8 +35,8 @@ int InitializeParallelExecution(int iNumWorkers, int *ipMySocket, SEXP rho);
 int CreateSocketPairs(int *ipMySocket, int *ipSchedulerSockets, int *ipWorkerSockets, int iNumWorkers, SEXP rho);
 int SpawnAllThreads(int iNumWorkers, int *ipSchedulerSockets, int *ipWorkerSockets);
 
-SEXP WaitForVariable(char *cpName, int iSocket, SEXP rho);
-int GetResultsFromScheduler(int iSocket, SEXP rho, char *cpCmpName);
+SEXP WaitForVariable(const char *cpName, int iSocket, SEXP rho);
+int GetResultsFromScheduler(int iSocket, SEXP rho, const char *cpCmpName);
 SEXP ReturnResult(data_packet *dpResult, char *cpName, SEXP rho);
 
 SEXP CreateExtPtrObj(char *cpName, SEXP rho);

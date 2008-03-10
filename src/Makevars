@@ -1,4 +1,6 @@
 # -*- Makefile -*-  vim : ft = make
 
-PKG_CFLAGS   = -g -Wall -L/home/srikanth/lib -L/home/srikanth/g/lib/LINUX -I/home/srikanth/include -I/home/srikanth/g/include -I/home/srikanth/lib/R/include -I/usr/include/pgsql -I/usr/include/readline  -Wall  -DPARALLEL_R_PACKAGE
-PKG_LIBS     = -L/home/srikanth/lib -L/home/srikanth/g/lib/LINUX -I/home/srikanth/include -I/home/srikanth/g/include -I/home/srikanth/lib/R/include -I/usr/include/pgsql -I/usr/include/readline -lmpi -llam -lpthread  
+PKG_CFLAGS   = -g -O2 -pthread -DHAVE_MPI  -Wall -I/usr/include/lam -DPARALLEL_R_PACKAGE
+PKG_LIBS     =  -lmpi  -L/usr/lib/lam 
+MPSPAWN      = mpspawn.o
+

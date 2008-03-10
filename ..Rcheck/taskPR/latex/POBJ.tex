@@ -1,0 +1,49 @@
+\HeaderA{POBJ}{Parallel Object (Return a Parallel Objection to R's workspace)}{POBJ}
+\keyword{programming}{POBJ}
+\begin{Description}\relax
+Blocks and waits for the specified variable to be returned by the
+parallel engine.
+\end{Description}
+\begin{Usage}
+\begin{verbatim}
+POBJ(x)
+\end{verbatim}
+\end{Usage}
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{x}] variable to return. 
+\end{ldescription}
+\end{Arguments}
+\begin{Details}\relax
+Because the \code{\LinkA{PE}{PE}} function executes jobs in the background,
+there must be a way to return jobs to the foreground - to R's workspace.
+That method is the POBJ function.  When passed a variable (which doesn't
+have to exist in R's workspace, yet), the POBJ function waits until that
+variable is available and returned from the parallel engine.
+If variable to return is given as NULL, then the POBJ function waits for
+all variables to be returned.
+The POBJ function returns the \bold{symbol} of the variable, not the
+variable itself.
+\end{Details}
+\begin{SeeAlso}\relax
+\code{\LinkA{StartPE}{StartPE}}  For enabling the parallel engine.
+\code{\LinkA{PE}{PE}}  For executing jobs in parallel.
+\end{SeeAlso}
+\begin{Examples}
+\begin{ExampleCode}
+## Not run: 
+# If you have MPI running
+StartPE(2)
+
+x = matrix(rnorm(128 * 128), 128, 128)
+
+PE( a <- svd(x) )
+PE( b <- solve(x) )
+PE( y <- b %*% a$u )
+POBJ( y )
+str(y)
+StopPE()
+## End(Not run)
+\end{ExampleCode}
+\end{Examples}
+

@@ -1,48 +1,49 @@
 (i) Installation Instructions:
 ------------------------------
 
-1. Download the package from http://www.aspect-sdm.org/Parallel-R/
+1. Download the package from CRAN or http://users.ece.gatech.edu/~gte810u/Parallel-R/
 2. Perform installation by executing the following command
-	R INSTALL taskPR_ver.tar.gz
-   
+	R CMD INSTALL taskPR_ver.tar.gz
+
    If the MPI is installed in a non-default directory
-   you need to provide the MPI directory path during 
+   you need to provide the MPI directory path during
    installation as shown below
 
-   R INSTALL --configure-args=--with-mpi=/mpi/home/path 
+   R CMD INSTALL --configure-args=--with-mpi=/mpi/home/path
  					taskPR_ver.tar.gz
 
 
-(ii) Parallel-R Setup:
+(ii) Starting taskPR:
 ----------------------
-There are two options for starting the Parallel-R engine.
+There are two options for starting the parallel/remote engine.
 
 1. Calling "StartPE" with the "spawn" option true.  This will
-   use a MPI-2 function call to spawn the worker processes 
-   and setup the Parallel-R environment.
+   use a MPI-2 function call to spawn the worker processes
+   and setup the taskPR environment. Specific behavior depends
+   on your MPI configuration.
 
 	StartPE ()
-   
-   By default StartPE function has the "spawn" option set to
-   true and a pair of worker processes are spawned. 
 
-2. Without MPI-2 library support the Parallel-R setup can be
+   By default StartPE function has the "spawn" option set to
+   true and a pair of worker processes are spawned.
+
+2. Without MPI-2 library support the taskPR setup can be
    achieved in 2 steps
 
-   a. In the main Parallel-R process call StartPE() function
-      with the spawn option "FALSE"
+   a. In the main process call StartPE() function with the
+      spawn option set to "FALSE"
 
    b. Then startup individual R processes and execute the
-      function StartWorker(). 
-   
-   Please refer to the StartPE() and StartWorker() documentation 
-   for more information. 
+      function StartWorker().
 
-      
+   Please refer to the StartPE() and StartWorker() documentation
+   for more information.
+
+
 (iii) Execution Instructions:
 -----------------------------
 
-1. Functions that needs to be run in parallel should be 
+1. Functions that needs to be run in parallel should be
    enclosed within function PE. Note that all the parallel
    tasks should follow the following form
 
@@ -66,6 +67,6 @@ There are two options for starting the Parallel-R engine.
 	POBJ(a)
 	print(a)
 
-  Output "a" from the above parallel task is retrieved, but NOT returned
+  Output "a" from the above parallel task is retrieved by, but NOT returned
   from the POBJ function.
 

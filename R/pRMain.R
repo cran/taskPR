@@ -5,18 +5,20 @@ StartPE <- function(num = 2, port = 32000, verbose=0, spawn=TRUE) {
 		host = Sys.info()[names(Sys.info()) == "nodename"]
 		prog = file.path(R.home(), "bin", "R")
 		str(arg)
-		.C("R_SpawnMPIProcesses", as.character(prog),
-			 as.integer(num), as.character(arg), PACKAGE="taskPR")
+		ret = 0
+		.C("R_SpawnMPIProcesses", as.character(prog), as.integer(num),
+			as.character(arg), as.integer(ret), PACKAGE="taskPR")
+		if (ret < 0) error("Processing spawning via MPI failed.  Startup aborted.")
 	}
     s = 0 * (1:num)
+	# .C("ExtInit", PACKAGE="base")
+	sock = .Call("OpenSocketAndListen", port, TRUE, num, PACKAGE="taskPR");
     for (i in 1:num) {
 		if (spawn) {
 			.C("NotifySpawnedMPIProcesses", as.character(host),
 					as.integer(i-1), PACKAGE="taskPR")
 		}
-        s[i] = socketConnection(port = port, block = TRUE, server=TRUE,
-				open="a+b")
-        s[i] = .Call("SocketFromConn", as.integer(s[i]), PACKAGE="taskPR")
+		s[i] = .Call("AcceptConnFromSocket", sock, PACKAGE="taskPR")
     }
     PE.WorkerConnections <- s
     if (verbose > 0) {

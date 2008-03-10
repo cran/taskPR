@@ -22,7 +22,7 @@
  * dependency handling, memory management, and object tracking.
  */
 /*  $Author: bauer $
-    $Date: 2004/07/26 13:26:30 $
+    $Date: 2004-07-26 13:26:30 $
     $Revision: 1.40 $
  */
 #include <stdio.h>

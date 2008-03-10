@@ -17,14 +17,16 @@
 /* mpspawn.c  MPI Spawn  -  Use MPI_Comm_spawn to spawn a number of processes,
  * 		and then establish a communications link with them.
  */
-/*	$Author: bauer $
-	$Date: 2004/07/16 18:15:17 $
-	$Revision: 1.15 $
+/*	$Author: david $
+	$Date: 2008-03-03 19:26:25 $
+	$Revision: 1.17 $
  */
 
 #include <stdio.h>
 #include <mpi.h>
-#include "Rinternals.h"
+#include <string.h>
+#include <R.h>
+#include <Rinternals.h>
 
 static MPI_Comm childComm = 0;
 
@@ -68,6 +70,8 @@ int SpawnMPIProcesses(char *cpProgramName, int iNumber, char **cppArguments) {
 			MPI_COMM_WORLD, &childComm, MPI_ERRCODES_IGNORE) != MPI_SUCCESS) {
 		printf("Failed to spawn %d children (\"%s\")!\n", iNumber,
 				cpProgramName);
+		/* Fix the arguments array, because R can't handle the NULL. */
+		if (iLen != 0) cppArguments[iLen] = "";	/* Prevents a Segfault. */
 		return -2;
 	}
 
@@ -88,8 +92,8 @@ int SpawnMPIProcesses(char *cpProgramName, int iNumber, char **cppArguments) {
 }
 
 /* Wrapper function which can be called from R */
-int R_SpawnMPIProcesses(char **cppProgram, int *ipNumber, char **cppArguments) {
-	return SpawnMPIProcesses(*cppProgram, *ipNumber, cppArguments);
+void R_SpawnMPIProcesses(char **cppProgram, int *ipNumber, char **cppArguments, int *ret) {
+	 *ret = SpawnMPIProcesses(*cppProgram, *ipNumber, cppArguments);
 }
 
 /* This function is used to establish communication with the worker processes,

@@ -1,0 +1,59 @@
+StartPE                package:taskPR                R Documentation
+
+_S_t_a_r_t/_S_t_o_p _P_a_r_a_l_l_e_l _E_x_e_c_u_t_i_o_n
+
+_D_e_s_c_r_i_p_t_i_o_n:
+
+     StartPE starts the parallel engine.  If spawn is true, then the
+     worker processes are spawned (using 'MPI_COMM_Spawn' from MPI-2).
+     StopPE stops the parallel engine.  This call blocks until all jobs
+     are finished.
+
+_U_s_a_g_e:
+
+     StartPE(num = 2, port = 32000, verbose=0, spawn=TRUE)
+     StopPE()
+
+_A_r_g_u_m_e_n_t_s:
+
+     num: number of worker processes to use 
+
+    port: the TCP port to use for communicating with workers 
+
+ verbose: the verbose level: 0, 1, or 2 at the moment 
+
+   spawn: should the worker processes be spawned? 
+
+_D_e_t_a_i_l_s:
+
+     The parallel engine must be enabled before instructions can be
+     executed in parallel.  The engine can be stopped and restarted
+     with a different number of worker processes, if desired. The
+     parallel engine consists of 'num' + 1 threads and 'num' worker
+     processes.  The worker processes can either be spawned (done
+     through an MPI call) or connected manually.  If StartPE is run
+     with spawn = FALSE, then it will block until 'num' worker
+     processes have connected.
+
+_S_e_e _A_l_s_o:
+
+     'PE'  For executing jobs in the background/parallel. 'POBJ'  For
+     returning background/parallel jobs to the main process.
+     'StartWorker'  For manually starting worker processes.
+
+_E_x_a_m_p_l_e_s:
+
+     ## Not run: 
+     # If you have MPI running
+     StartPE(2)
+
+     x = matrix(rnorm(128 * 128), 128, 128)
+
+     PE( a <- svd(x) )
+     PE( b <- solve(x) )
+     PE( y <- b %*% a$u )
+     POBJ( y )
+     str(y)
+     StopPE()
+     ## End(Not run)
+

@@ -1,0 +1,91 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head><title>R: Start/Stop Parallel Execution</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<link rel="stylesheet" type="text/css" href="../../R.css">
+</head><body>
+
+<table width="100%" summary="page for StartPE {taskPR}"><tr><td>StartPE {taskPR}</td><td align="right">R Documentation</td></tr></table>
+<h2>Start/Stop Parallel Execution</h2>
+
+
+<h3>Description</h3>
+
+<p>
+StartPE starts the parallel engine.  If spawn is true, then the worker
+processes are spawned (using <code>MPI\_COMM\_Spawn</code> from MPI-2).
+StopPE stops the parallel engine.  This call blocks until all jobs
+are finished.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+StartPE(num = 2, port = 32000, verbose=0, spawn=TRUE)
+StopPE()
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>num</code></td>
+<td>
+number of worker processes to use </td></tr>
+<tr valign="top"><td><code>port</code></td>
+<td>
+the TCP port to use for communicating with workers </td></tr>
+<tr valign="top"><td><code>verbose</code></td>
+<td>
+the verbose level: 0, 1, or 2 at the moment </td></tr>
+<tr valign="top"><td><code>spawn</code></td>
+<td>
+should the worker processes be spawned? </td></tr>
+</table>
+
+<h3>Details</h3>
+
+<p>
+The parallel engine must be enabled before instructions can be executed
+in parallel.  The engine can be stopped and restarted with a different
+number of worker processes, if desired.
+The parallel engine consists of <code>num</code> + 1 threads and <code>num</code>
+worker processes.  The worker processes can either be spawned (done
+through an MPI call) or connected manually.  If StartPE is run with
+spawn = FALSE, then it will block until <code>num</code> worker processes
+have connected.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>
+<code><a href="PE.html">PE</a></code>  For executing jobs in the background/parallel.
+<code><a href="POBJ.html">POBJ</a></code>  For returning background/parallel jobs to the main process.
+<code><a href="StartWorker.html">StartWorker</a></code>  For manually starting worker processes.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Not run: 
+# If you have MPI running
+StartPE(2)
+
+x = matrix(rnorm(128 * 128), 128, 128)
+
+PE( a &lt;- svd(x) )
+PE( b &lt;- solve(x) )
+PE( y &lt;- b %*% a$u )
+POBJ( y )
+str(y)
+StopPE()
+## End(Not run)
+</pre>
+
+
+
+<hr><div align="center">[Package <em>taskPR</em> version 0.30 <a href="00Index.html">Index]</a></div>
+
+</body></html>

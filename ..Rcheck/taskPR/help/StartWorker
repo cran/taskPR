@@ -1,0 +1,57 @@
+StartWorker              package:taskPR              R Documentation
+
+_S_t_a_r_t _P_a_r_a_l_l_e_l-_R _W_o_r_k_e_r _P_r_o_c_e_s_s
+
+_D_e_s_c_r_i_p_t_i_o_n:
+
+     Attempts to connect to the given host and establish itself as a
+     worker process.  This function is called automatically when worker
+     processes are spawned by the main process.
+
+_U_s_a_g_e:
+
+     StartWorker(host = "localhost", port=32000, retries=2, sleeptime=1, quiet=TRUE)
+
+_A_r_g_u_m_e_n_t_s:
+
+    host: name of the machine that the main/controller process is on 
+
+    port: the (TCP/IP) port number to connect to 
+
+ retries: the number of times to retry making the connection 
+
+sleeptime: how long (in seconds) to sleep between connection tries 
+
+   quiet: should the worker process supress most logging messages? 
+
+_D_e_t_a_i_l_s:
+
+     The only time a user should call this function is when they
+     started the parallel engine on the main process using the
+     spawn=FALSE option to StartPE.  In that case, the main process
+     will block waiting for the worker processes to connect.  The user
+     must run the appropriate number of worker processes and have them
+     call this function.
+
+_S_e_e _A_l_s_o:
+
+     'StartPE'  For enabling the parallel engine. 'PE'        For
+     running parallel jobs. 'POBJ'  For returning background jobs to
+     the main process.
+
+_E_x_a_m_p_l_e_s:
+
+     ## Not run: 
+     # If you have MPI running
+     StartPE(2)
+
+     x = matrix(rnorm(128 * 128), 128, 128)
+
+     PE( a <- svd(x) )
+     PE( b <- solve(x) )
+     PE( y <- b %*% a$u )
+     POBJ( y )
+     str(y)
+     StopPE()
+     ## End(Not run)
+

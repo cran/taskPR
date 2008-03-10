@@ -2,7 +2,7 @@
 \alias{StartWorker}
 \title{Start Parallel-R Worker Process}
 \usage{
-StartWorker (host = "localhost", port=32000, retries=2, sleeptime=1, quiet=TRUE)
+StartWorker(host = "localhost", port=32000, retries=2, sleeptime=1, quiet=TRUE)
 }
 \arguments{
 	\item{host}{ name of the machine that the main/controller process is on }

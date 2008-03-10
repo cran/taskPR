@@ -18,9 +18,9 @@
  * scheduler and pass them on to worker processes.  Each worker thread
  * communicates with a single worker process.
  */
-/*  $Author: bauer $
-    $Date: 2004/08/01 13:00:14 $
-    $Revision: 1.24 $
+/*  $Author: david $
+    $Date: 2008-02-13 17:25:33 $
+    $Revision: 1.26 $
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,6 +30,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/tcp.h>
+#include <string.h>
 #include "scheduler.h"
 
 int ReceiveBuffer(int iSocket, char *vpData, int iLen);
@@ -91,6 +92,9 @@ void *MainWorkerLoop(int iWorkerSocket, int iSchedulerSocket) {
 	int iJobNum;
 
 	do {
+		r = 1;
+		setsockopt(iWorkerSocket, 6 /* TCP */, TCP_CORK, &r, sizeof(r));
+
 		/* Get the job from the Scheduler thread */
 		read(iSchedulerSocket, &jnpNode, sizeof(job_node *));
 
@@ -106,6 +110,7 @@ void *MainWorkerLoop(int iWorkerSocket, int iSchedulerSocket) {
 		jppPacket = jnpNode->job;
 		iJobNum = jppPacket->iJobNum;
 
+//		printf("Job %p in worker thread at %f\n", jppPacket, GETTIME());
 		/* If verbose execution was enabled, print out the message. */
 		if (iGlobalParallelEngineEnabled > 1)
 			PrintJobReceivedMessage(jppPacket, iSchedulerSocket);
@@ -113,10 +118,16 @@ void *MainWorkerLoop(int iWorkerSocket, int iSchedulerSocket) {
 		/* Send the job to the worker process */
 		SendJobToWorker(jppPacket, iWorkerSocket, iSchedulerSocket);
 
+		r = 1;
+		setsockopt(iWorkerSocket, 6 /* TCP */, TCP_NODELAY, &r, sizeof(r));
+
+//		printf("Job %p sent to worker at %f\n", jppPacket, GETTIME());
+
 		/* Receive the output from the worker process */
 		jppPacket->dpResult = ReceiveResult(jppPacket->cpOutVar,
 				jppPacket->iJobNum, iWorkerSocket, iSchedulerSocket); 
 
+//		printf("Job %p returned to worker thread at %f\n", jppPacket, GETTIME());
 		Dprintf(("Worker (%x) finished job %d\n", iSchedulerSocket, iJobNum));
 
 		/* Return the result to the scheduler thread */
@@ -131,10 +142,15 @@ data_packet *ReceiveResult(char *cpName, int iJobNum, int iSocket, int iID) {
 	int r, iLen;
 	data_packet *dpResult;
 	char cpBuf[256];
+	double t1, t2;
 
+	r = 1;
+	setsockopt(iSocket, 6 /* TCP */, TCP_QUICKACK, &r, sizeof(r));
 	/* Receive the output: length(data), data */
 	r=recv(iSocket, &iLen, sizeof(int), 0);
 	if (r < sizeof(int)) perror("Error receiving length of result");
+
+//	printf("Job %d about to return at %f\n", iJobNum, GETTIME());
 
 	dpResult = CreateResultPacket(iLen, cpName);
 	if (dpResult == NULL) {
@@ -142,12 +158,16 @@ data_packet *ReceiveResult(char *cpName, int iJobNum, int iSocket, int iID) {
 		return NULL;
 	}
 
+	setsockopt(iSocket, 6 /* TCP */, TCP_QUICKACK, &r, sizeof(r));
+//	t1 = GETTIME();
 	r = ReceiveBuffer(iSocket, dpResult->vpData, iLen);
+//	t2 = GETTIME();
 	sprintf(cpBuf,"Worker (%x) received %d of %d bytes of result of job %d",
 			iID, r, iLen, iJobNum);
 	if (r < iLen) perror(cpBuf);
 	else Dprintf(("%s - Good\n", cpBuf));
 
+//	printf("Receiving %d byte result packet took %.0f us\n", iLen, t2 - t1);
 	return dpResult;
 }
 

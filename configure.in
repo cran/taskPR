@@ -13,12 +13,14 @@ AC_ARG_WITH(mpi,
     fi  ]
 )
 
+MPI_LIB=""
 AC_CHECK_HEADER(mpi.h, [ MPI_INCLUDE="" ],
 [   if test "${supply_mpi}" = yes; then
         echo "Looking for mpi.h in ${MPI_ROOT}/include"
         if test -f "${MPI_ROOT}/include/mpi.h"; then
             echo "Found in ${MPI_ROOT}/include"
             MPI_INCLUDE="-I${MPI_ROOT}/include"
+			MPI_LIB="-L{MPI_ROOT}/lib"
         elif test -f "${MPI_ROOT}/mpi.h"; then
             echo "Found in ${MPI_ROOT}"
             MPI_INCLUDE="-I${MPI_ROOT}"
@@ -32,15 +34,18 @@ AC_CHECK_HEADER(mpi.h, [ MPI_INCLUDE="" ],
         if test -f "/usr/include/mpi.h"; then
             echo "Found in /usr/include"
             MPI_INCLUDE="/usr/include"
-        elif test -f "/usr/local/include/mpi.h"; then
-            echo "Found in /usr/local/include"
-            MPI_INCLUDE="-I/usr/local/include"
-        elif test -f "${HOME}/include/mpi.h"; then
-            echo "Found in ${HOME}/include"
-            MPI_INCLUDE="-I${HOME}/include"
         elif test -f "/usr/include/lam/mpi.h"; then
             echo "Found in /usr/include/lam"
             MPI_INCLUDE="-I/usr/include/lam"
+			MPI_LIB="-L/usr/lib/lam"
+        elif test -f "/usr/local/include/mpi.h"; then
+            echo "Found in /usr/local/include"
+            MPI_INCLUDE="-I/usr/local/include"
+			MPI_LIB="-L/usr/local/lib"
+        elif test -f "${HOME}/include/mpi.h"; then
+            echo "Found in ${HOME}/include"
+            MPI_INCLUDE="-I${HOME}/include"
+			MPI_LIB="-L${HOME}/lib"
         else
             MPI_INCLUDE=`locate "mpi.h" | grep "/mpi.h" | grep "[[Ll]][[Aa]][[Mm]]" | head -n 1`
             echo "${MPI_INCLUDE}"
@@ -49,37 +54,57 @@ AC_CHECK_HEADER(mpi.h, [ MPI_INCLUDE="" ],
 				echo "Found in ${MPI_INCLUDE}"
                 MPI_INCLUDE="-I${MPI_INCLUDE}"
             else
-                echo "Cannot find mpi header file."
-                echo "Please use --with-mpi=/path/to/mpi"
-                exit 1
+                echo "Not found. Disabling MPI process spawning."
+				MPI_INCLUDE="None"
             fi
         fi
     fi
 ]
 )
+# MPI_INCLUDE="None"
 
-AC_CHECK_LIB(pthread, pthread_detach, [], [
-    AC_CHECK_LIB(pthreads, pthread_detach , [], [
-        CFLAGS="${CFLAGS} -pthread"
-        AC_CHECK_FUNC(pthread_create, [], [
-            echo "Error!  libpthread is required."
-            exit -1
+AC_CHECK_FUNC(pthread_create, [], [
+  unset ac_cv_func_pthread_create
+  CFLAGS="${CFLAGS} -pthread"
+    AC_CHECK_FUNC(pthread_create, [echo "Using -pthread flag"], [
+      AC_CHECK_LIB(pthread, pthread_create, [], [
+        AC_CHECK_LIB(pthreads, pthread_create , [], [
+          echo "Error!  libpthread is required."
+          exit -1
         ])
-    ])
+	  ])
+	])
 ])
 
+if test "${MPI_INCLUDE}" != "None"; then
 AC_CHECK_FUNC(MPI_Comm_spawn, [], [
+	LIBS="${LIBS} ${MPI_LIB}"
     AC_CHECK_LIB(mpi, MPI_Comm_spawn, [], [
         AC_CHECK_LIB(lam, lam_rtrstore, [], [
-            echo "Error!  liblam is required (mpich won't work)."
-            exit -1
+			AC_CHECK_LIB(util,openpty, [], [])
+        	AC_CHECK_LIB(lam, lam_getpid, [], [
+	           	echo "Error!  liblam is required (mpich won't work)."
+				MPI_INCLUDE="None"
+				])
         ])
         AC_CHECK_LIB(mpi, MPI_Comm_spawn_multiple, [], [
-            echo "Error!  libmpi is required."
-            exit -1
+            echo "Suitable MPI library not found! Must have MPI_Comm_spawn*"
+			MPI_INCLUDE="None"
         ])
     ])
 ])
+
+else
+	echo "Skipping check for MPI library"
+fi
+
+MPSPAWN=""
+if test "${MPI_INCLUDE}" != "None"; then
+	CFLAGS="${CFLAGS} -DHAVE_MPI"
+	MPSPAWN="mpspawn.o"
+else
+	MPI_INCLUDE=""
+fi
 
 dnl AX_CFLAGS_OPTIONS(var-name, option)
 dnl add option to var-name if $CC support it.
@@ -101,6 +126,7 @@ PKG_CFLAGS="${CFLAGS} ${OP_CFLAGS} ${MPI_INCLUDE}"
 
 AC_SUBST(PKG_LIBS)
 AC_SUBST(PKG_CFLAGS)
+AC_SUBST(MPSPAWN)
 AC_SUBST(DEFS)
 
 AC_OUTPUT(src/Makevars)

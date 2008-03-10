@@ -16,15 +16,18 @@
 **************************************************************************** */
 /* peval.c  Parallel Evalution */
 /* All functions in this file are only executed by the MAIN thread! */
-/*  $Author: bauer $
-	$Date: 2004/08/01 13:00:14 $
-	$Revision: 1.51 $
+/*  $Author: david $
+	$Date: 2008-03-03 19:28:13 $
+	$Revision: 1.54 $
  */
 #include <stdio.h>
 #include <Rinternals.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <stdlib.h>
+#include <string.h>
+#include <pthread.h>
 #include "scheduler.h"
 #include "peval.h"
 
@@ -34,7 +37,9 @@ void *StartWorkerLoop(void *vpSocket);
 void *StartFakeWorkerLoop(void *vpSocket);
 char **FindInputs1(SEXP sxIn, char **cppCurrentList, int *ipListSize);
 SEXP R_serialize(SEXP object, SEXP icon, SEXP ascii, SEXP fun);
-SEXP R_unserialize(SEXP icon, SEXP fun);
+//SEXP R_unserialize(SEXP icon, SEXP fun);
+SEXP My_unserialize(SEXP icon);
+SEXP My_serialize(SEXP object, SEXP ascii);
 int my_remove(char *cpName, SEXP rho);
 
 int bSafeToGetResults = 0;		/* Referenced here and in eval() */
@@ -55,9 +60,11 @@ int ParallelExecute(SEXP s, int iSocket, int iGlobal, SEXP rho) {
 		return -1;
 	}
 
+//	printf("Begining ParallelExecute at %f\n", GETTIME());
 	/* Generate a job packet from a job (given as a LANGSXP) */
 	jppPacket = CreateAndPopulateJobPacket(s, rho, iGlobal);
 
+//	printf("Job created at %f\n", GETTIME());
 	/* Send (a pointer to) the packet to the scheduler. */
 	write(iSocket, &jppPacket, sizeof(job_packet *));
 
@@ -66,6 +73,7 @@ int ParallelExecute(SEXP s, int iSocket, int iGlobal, SEXP rho) {
 	 * thread */
 	iWait = SerializeDataRequest(jppPacket, rho, iSocket);
 
+//	printf("Job %p serialized at %f\n", jppPacket, GETTIME());
 	/* Note: It is probably bad form to reference the copy of the name from
 	 * the job_packet here (after it has been sent to the scheduler.  Of
 	 * course, I do the same thing above with cppInVars.  It is safe because
@@ -166,12 +174,14 @@ data_packet *CreateDataPacket(SEXP sxInput, char *cpName) {
 	data_packet *dpInput;
 
 #ifdef PARALLEL_R_PACKAGE
-	PROTECT(sxSerial = R_serialize(sxInput, R_NilValue,
-			ScalarLogical(0), R_NilValue));
+	PROTECT(sxSerial = My_serialize(sxInput, ScalarLogical(0)));
 #else
 	PROTECT(sxSerial = R_serialize(sxInput, R_NilValue,
 			ScalarInteger(2), R_NilValue));
 #endif
+	if (sxSerial == R_NilValue) {
+		fprintf(stderr, "Serialization of variable %s failed!\n", cpName);
+	}
 
 	/* Begin:  Create the data packet */
 	dpInput = (data_packet *) malloc(sizeof(data_packet));
@@ -181,9 +191,9 @@ data_packet *CreateDataPacket(SEXP sxInput, char *cpName) {
 		return NULL;
 	}
 	dpInput->iNumRef = 1;
-	dpInput->iLen = LENGTH(STRING_ELT(sxSerial, 0));
+	dpInput->iLen = LENGTH(sxSerial);
 	dpInput->vpData = (void *) malloc((size_t) dpInput->iLen);
-	memcpy(dpInput->vpData, CHAR(STRING_ELT(sxSerial, 0)),
+	memcpy(dpInput->vpData, RAW(sxSerial),
 			dpInput->iLen);
 	if (cpName == NULL) {
 		dpInput->cpName = NULL;
@@ -371,7 +381,7 @@ int CreateSocketPairs(int *ipMySocket, int *ipSchedulerSockets,
 /* This function does NOT check the "bJobsFinished" flag, but calling it
  * when there are no jobs available causes no problems (just minor overhead).
  */
-int GetResultsFromScheduler(int iSocket, SEXP rho, char *cpCmpName) {
+int GetResultsFromScheduler(int iSocket, SEXP rho, const char *cpCmpName) {
 	char *cpName = NULL;
 	job_packet *jppPacket;
 	data_packet *dpResult;
@@ -442,17 +452,15 @@ int GetResultsFromScheduler(int iSocket, SEXP rho, char *cpCmpName) {
  */
 SEXP ReturnResult(data_packet *dpResult, char *cpName, SEXP rho) {
 	int iLen;
-	SEXP sxResultChar, sxResultStr;
+	SEXP sxResult;
 	SEXP sxTemp, sxExtPtr;
 
 	iLen = dpResult->iLen;
-	PROTECT(sxResultChar = allocVector(CHARSXP, iLen));
-	memcpy(CHAR(sxResultChar), dpResult->vpData, dpResult->iLen);
-	PROTECT(sxResultStr = allocVector(STRSXP, 1));
-	SET_STRING_ELT(sxResultStr, 0, sxResultChar);
+	PROTECT(sxResult = allocVector(RAWSXP, iLen));
+	memcpy(RAW(sxResult), dpResult->vpData, dpResult->iLen);
 
 	/* Unserialize the output and install it into R's workspace. */
-	PROTECT(sxTemp = R_unserialize(sxResultStr, R_NilValue));
+	PROTECT(sxTemp = My_unserialize(sxResult));
 	sxExtPtr = findVar(install(cpName), rho);
 	if (sxExtPtr == R_NilValue) {
 		printf("PEval: Failed to find ExtPtr placeholder\n");
@@ -473,7 +481,7 @@ SEXP ReturnResult(data_packet *dpResult, char *cpName, SEXP rho) {
 				cpName, (void *) rho);
 	}
 
-	UNPROTECT(3);
+	UNPROTECT(2);
 
 	return sxTemp;
 }
@@ -482,7 +490,7 @@ SEXP ReturnResult(data_packet *dpResult, char *cpName, SEXP rho) {
  * If cpName is the empty string ("" or "\0"), wait for the next variable.
  * If cpName is NULL wait for all jobs to finish.
  */
-SEXP WaitForVariable(char *cpName, int iSocket, SEXP rho) {
+SEXP WaitForVariable(const char *cpName, int iSocket, SEXP rho) {
 	job_packet *jppPacket;
 	int bDone = 0;
 	sxGlobalLastReturned = R_NilValue;

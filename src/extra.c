@@ -19,15 +19,16 @@
  *  needed by the main version, or are embedded into R's code in the main
  *  version.
  */
-/*  $Author: bauer $
-    $Date: 2004/08/01 13:00:11 $
-    $Revision: 1.14 $
+/*  $Author: david $
+    $Date: 2008-03-02 03:44:21 $
+    $Revision: 1.15 $
  */
 #include <unistd.h>
-#define USE_RINTERNALS
-#include "Rinternals.h"
-#include "Defn.h"
-#include "Rconnections.h"
+//#define USE_RINTERNALS
+#include <R.h>
+#include <Rinternals.h>
+//#include "Defn.h"
+//#include "Rconnections.h"
 #include "peval.h"
 
 char **FindInputs( SEXP sxIn );
@@ -40,6 +41,16 @@ SEXP (RStrLength)(SEXP x) {
 	else return ScalarInteger(-1);
 }
 
+// SEXP mkPRIMSXP(int offset, int eval);
+// int StrToInternal(const char *s);
+// SEXP do_remove(SEXP call, SEXP op, SEXP args, SEXP rho);
+
+int my_remove(char *cpName, SEXP rho) {
+	warning("WARNING:  stub function my_remove called on variable %s\n", cpName);
+	return 0;
+}
+
+#if 0
 /* From "envir.c" */
 int my_remove(char *cpName, SEXP rho) {
 	SEXP call = R_NilValue;
@@ -54,7 +65,9 @@ int my_remove(char *cpName, SEXP rho) {
 
 	return 0;
 }
+#endif
 
+#if 0
 /* From "connections.c" */
 SEXP ClearConn(SEXP sxCon) {
 	Rconnection con = getConnection(asInteger(sxCon));
@@ -70,6 +83,7 @@ SEXP ClearConn(SEXP sxCon) {
 
 	return R_NilValue;
 }
+#endif
 
 /* From "names.c" */
 SEXP Rinstall(SEXP s) {
@@ -181,7 +195,6 @@ SEXP CallPE( SEXP sxCall, SEXP sxGlobal, SEXP rho ) {
 		int iIndex = 0;
 		char cpBuf[256];
 		int iStrLen;
-		char *cpOutputName;
 		int iGlobal = 0;
 
 		sxCall = PackageVersionOfCheckAndConvert(sxCall);
@@ -189,7 +202,7 @@ SEXP CallPE( SEXP sxCall, SEXP sxGlobal, SEXP rho ) {
 
 		cppInputList = FindInputs(CDR(CDR(sxCall)));
 		if (cppInputList != NULL && iGlobalParallelEngineEnabled > 1) {
-			cpOutputName = R_CHAR(PRINTNAME(CAR(CDR(sxCall))));
+			const char *cpOutputName = CHAR(PRINTNAME(CAR(CDR(sxCall))));
 			sprintf(cpBuf, "%s = f(", cpOutputName);
 			while (cppInputList[iIndex] != NULL) {
 				iStrLen = strlen(cpBuf);
@@ -229,7 +242,7 @@ SEXP CallPOBJ(SEXP sxCall, SEXP rho) {
 		return R_NilValue;
 	}
 	if (TYPEOF(sxCall) == SYMSXP) {
-		WaitForVariable(R_CHAR(PRINTNAME(sxCall)),
+		WaitForVariable(CHAR(PRINTNAME(sxCall)),
 				iSchedulerSocket, rho);
 		return sxCall;
 	}
@@ -271,15 +284,14 @@ char **FindInputs( SEXP sxIn ) {
     return cppCurrentList;
 }
 char **FindInputs1( SEXP sxIn, char **cppCurrentList, int *ipListSize) {
-    char *cpName;
-                                                                                
+
     if (sxIn == NULL || sxIn == R_NilValue) return cppCurrentList;
                                                                                 
     switch(TYPEOF(sxIn)) {
         case 2: /* LISTSXP */
             /* printf("FindInputs1:%d: Found list\n", *ipListSize); */
             if (TYPEOF(CAR(sxIn)) == SYMSXP) {
-                cpName = R_CHAR(PRINTNAME(CAR(sxIn)));
+                const char *cpName = CHAR(PRINTNAME(CAR(sxIn)));
                 /* Check to see if the name is empty. */
                 if (cpName != NULL && *cpName != '\0') {
                     /* Check to see if the name is already on the list. */
@@ -292,7 +304,7 @@ char **FindInputs1( SEXP sxIn, char **cppCurrentList, int *ipListSize) {
                         cppCurrentList = realloc(cppCurrentList,
                                 sizeof(char *) * (1 + *ipListSize));
                         cppCurrentList[(*ipListSize)++] =
-                                strdup(R_CHAR(PRINTNAME(CAR(sxIn))));
+                                strdup(CHAR(PRINTNAME(CAR(sxIn))));
                     }
                 }
             } else {
@@ -307,7 +319,7 @@ char **FindInputs1( SEXP sxIn, char **cppCurrentList, int *ipListSize) {
             /* If the function is the "$" function, then ignore its second
              * parameter (there shouldn't be any after the second).
              */
-            if (strcmp(R_CHAR(PRINTNAME(CAR(sxIn))), "$") == 0) {
+            if (strcmp(CHAR(PRINTNAME(CAR(sxIn))), "$") == 0) {
                 if (TYPEOF(CAR(CDR(sxIn))) != LANGSXP) {
                     PROTECT(sxIn = CONS(CAR(CDR(sxIn)), R_NilValue));
                     cppCurrentList = FindInputs1(sxIn, cppCurrentList,
@@ -327,7 +339,213 @@ char **FindInputs1( SEXP sxIn, char **cppCurrentList, int *ipListSize) {
     return cppCurrentList;
 }
 
+/* **********************************************************************
+ * *********************************************************************/
+/* From sockconn.c */
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <fcntl.h>
 
+/* Open a tcp/ip socket, bind it to the given port, and start listening.
+ * sBlock is a boolean saying whether the socket should be blocking or not.
+ * sBacklog sets the maximum number of connections waiting to be accepted.
+ * Note:  The backlog parameter is often lowered by the OS!
+ *        See the listen (2) man page for details.
+ */
+SEXP OpenSocketAndListen(SEXP sPort, SEXP sBlock, SEXP sBacklog) {
+    int iSocket;
+    struct sockaddr_in ssAddr;
+    int iOne = 1;
+
+    sPort = coerceVector(sPort, INTSXP);
+    sBlock = coerceVector(sBlock, LGLSXP);
+    sBacklog = coerceVector(sBacklog, INTSXP);
+
+    iSocket = socket(PF_INET, SOCK_STREAM, 0);
+    if (iSocket == -1) error("Failed to open socket");
+
+    setsockopt(iSocket, SOL_SOCKET, SO_REUSEADDR, &iOne, sizeof(iOne));
+
+    /* Blocking should be the default behavior, so only the non-blocking
+     * case has to be set.
+     */
+    if (! INTEGER(sBlock)[0])
+        fcntl(iSocket, F_SETFL, O_NONBLOCK);
+
+    memset(&ssAddr, 0x00, sizeof(ssAddr));
+    ssAddr.sin_family = AF_INET;
+    ssAddr.sin_port = htons(INTEGER(sPort)[0]);
+    ssAddr.sin_addr.s_addr = INADDR_ANY;
+    if (bind(iSocket, (struct sockaddr *) &ssAddr, sizeof(ssAddr)) == -1)
+        error("Failed to bind to port.  Already in use?");
+
+    if (listen(iSocket, INTEGER(sBacklog)[0]) == -1)
+        error("Failed to listen to port.");
+
+    return (ScalarInteger(iSocket));
+}
+
+/* Given an open, listening socket, accept (in a blocking manner) a
+ * connection on that socket, and return the new FD.
+ */
+SEXP AcceptConnFromSocket(SEXP sSocket) {
+    int iSocket;
+
+    iSocket = INTEGER(coerceVector(sSocket, INTSXP))[0];
+
+    return (ScalarInteger(accept(iSocket, NULL, NULL)));
+}
+
+/* Close the given socket (or whatever the given file descriptor goes with).
+ */
+SEXP CloseSocket(SEXP sSocket) {
+    int iSocket;
+
+    iSocket = INTEGER(coerceVector(sSocket, INTSXP))[0];
+
+    return (ScalarInteger(close(iSocket)));
+}
+
+/* **********************************************************************
+ * *********************************************************************/
+/* From serialize.c */
+typedef size_t R_size_t;
+
+typedef struct membuf_st {
+	R_size_t size;
+	R_size_t count;
+	unsigned char *buf;
+} *membuf_t;
+
+static void resize_buffer(membuf_t mb, R_size_t needed)
+{
+	/* This used to allocate double 'needed', but that was problematic for
+	 *        large buffers */
+	R_size_t newsize = needed;
+	/* we need to store the result in a RAWSXP */
+	if(needed > INT_MAX)
+		error("serialization is too large to store in a raw vector");
+	mb->buf = realloc(mb->buf, newsize);
+	if (mb->buf == NULL)
+		error("cannot allocate buffer");
+	mb->size = newsize;
+}
+
+static int InCharMem(R_inpstream_t stream)
+{
+	membuf_t mb = stream->data;
+	if (mb->count >= mb->size)
+		error("read error");
+	return mb->buf[mb->count++];
+}
+
+static void InBytesMem(R_inpstream_t stream, void *buf, int length)
+{
+	membuf_t mb = stream->data;
+	if (mb->count + (R_size_t) length > mb->size)
+		error("read error");
+	memcpy(buf, mb->buf + mb->count, length);
+	mb->count += length;
+}
+
+static void OutCharMem(R_outpstream_t stream, int c)
+{
+	membuf_t mb = stream->data;
+	if (mb->count >= mb->size)
+		resize_buffer(mb, mb->count + 1);
+	mb->buf[mb->count++] = c;
+}
+
+static void OutBytesMem(R_outpstream_t stream, void *buf, int length)
+{
+	membuf_t mb = stream->data;
+	R_size_t needed = mb->count + (R_size_t) length;
+	/* There is a potential overflow here on 32-bit systems */
+	if((double) mb->count + length > (double) INT_MAX)
+		error("serialization is too large to store in a raw vector");
+	if (needed > mb->size) resize_buffer(mb, needed);
+	memcpy(mb->buf + mb->count, buf, length);
+	mb->count = needed;
+}
+
+static void free_mem_buffer(void *data)
+{
+	membuf_t mb = data;
+	if (mb->buf != NULL) {
+		unsigned char *buf = mb->buf;
+		mb->buf = NULL;
+		free(buf);
+	}
+}
+
+static SEXP CloseMemOutPStream(R_outpstream_t stream)
+{
+	SEXP val;
+	membuf_t mb = stream->data;
+	/* duplicate check, for future proofing */
+	if(mb->count > INT_MAX)
+		error("serialization is too large to store in a raw vector");
+	PROTECT(val = allocVector(RAWSXP, mb->count));
+	memcpy(RAW(val), mb->buf, mb->count);
+	free_mem_buffer(mb);
+	UNPROTECT(1);
+	return val;
+}
+
+SEXP My_unserialize(SEXP icon) {
+	struct membuf_st mbs;
+	struct R_inpstream_st in;
+	if (TYPEOF(icon) != RAWSXP) {
+		error("Expected RAWSXP as input");
+	}
+
+	mbs.count = 0;
+	mbs.size = LENGTH(icon);
+	mbs.buf = RAW(icon);
+	R_InitInPStream(&in, (R_pstream_data_t) &mbs, R_pstream_any_format,
+			InCharMem, InBytesMem, NULL, R_NilValue);
+	return R_Unserialize(&in);
+}
+
+SEXP My_serialize(SEXP object, SEXP ascii) {
+	struct R_outpstream_st out;
+	R_pstream_format_t type;
+
+	if (asLogical(ascii)) type = R_pstream_ascii_format;
+	else type = R_pstream_xdr_format; /**** binary or ascii if no XDR? */
+//	RCNTXT cntxt;
+	struct membuf_st mbs;
+	SEXP val;
+
+	/* set up a context which will free the buffer if there is an error */
+//	begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_BaseEnv, R_BaseEnv,
+//			R_NilValue, R_NilValue);
+//	cntxt.cend = &free_mem_buffer;
+//	cntxt.cenddata = &mbs;
+
+	mbs.count = 0;
+	mbs.size = 0;
+	mbs.buf = NULL;
+    R_InitOutPStream(&out, (R_pstream_data_t) &mbs, type, 0,
+				             OutCharMem, OutBytesMem, NULL, R_NilValue);
+
+	R_Serialize(object, &out);
+
+	val =  CloseMemOutPStream(&out);
+
+	/* end the context after anything that could raise an error but before
+	 *        calling OutTerm so it doesn't get called twice */
+//	endcontext(&cntxt);
+
+	return val;
+
+}
+
+/* **********************************************************************
+ * *********************************************************************/
+
+#if 0
 /* From "sockconn.c" 
  * Given an R connection, return the associated socket.
  */
@@ -341,6 +559,7 @@ SEXP SocketFromConn(SEXP s) {
 	if (this == NULL) return R_NilValue;
 	return (ScalarInteger(this->fd));
 }
+#endif
 
 /* Sets a value of a variable and is called from R scripts */
 void my_setVar(SEXP symbol, SEXP value, SEXP rho) {
@@ -474,7 +693,7 @@ int Decompose1( SEXP sxIn ) {
     case 9:
         /* CHARSXP */
         INDENT( iIndent );
-        printf("\"%s\"\n", R_CHAR(sxIn));
+        printf("\"%s\"\n", CHAR(sxIn));
         break;
     case 10:
         /* LGLSXP */

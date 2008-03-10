@@ -1,0 +1,58 @@
+\HeaderA{PE}{Parallel Execute}{PE}
+\keyword{programming}{PE}
+\begin{Description}\relax
+Attempts to execute the given expression through the parallel engine.
+\end{Description}
+\begin{Usage}
+\begin{verbatim}
+PE(x, global=FALSE)
+\end{verbatim}
+\end{Usage}
+\begin{Arguments}
+\begin{ldescription}
+\item[\code{x}] expression to execute in background/parallel 
+\item[\code{global}] should this command be executed globally? 
+\end{ldescription}
+\end{Arguments}
+\begin{Details}\relax
+The parallel engine takes the given expression and tries to execute it
+on a worker process (which may be on a remote system).  It will be
+executed in the background and possibly in parallel with other PE calls.
+
+Only a limited number of jobs can be run through the parallel engine at
+once.  If that number is exceeded, then the PE call will block until some
+of the jobs have finished.
+
+\emph{The given expression \strong{must} be of the form "out <- f(...)".}
+
+When code{global} is true, the command is executed globally.  This does
+several things.  First, the parallel engine will wait until all workers
+are free before started to execute the command.  Second, the command will
+be executed on all worker processes simultaneously.  Third, the output of
+the command will NOT be deleted from the worker processes' workspaces (as
+is usually done).  This "global execute" functionality is designed for
+loading libraries or defining functions, and not for the parallel
+execution of common commands.
+\end{Details}
+\begin{SeeAlso}\relax
+\code{\LinkA{StartPE}{StartPE}}  For enabling the parallel engine.
+\code{\LinkA{POBJ}{POBJ}}  For returning background jobs to the main process.
+\end{SeeAlso}
+\begin{Examples}
+\begin{ExampleCode}
+## Not run: 
+# If you have MPI running
+StartPE(2)
+
+x = matrix(rnorm(128 * 128), 128, 128)
+
+PE( a <- svd(x) )
+PE( b <- solve(x) )
+PE( y <- b %*% a$u )
+POBJ( y )
+str(y)
+StopPE()
+## End(Not run)
+\end{ExampleCode}
+\end{Examples}
+

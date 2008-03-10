@@ -22,7 +22,7 @@
  * Written because the !*@^%! standard doesn't support deleting entries!!
  */
 /*  $Author: bauer $
-    $Date: 2004/08/01 13:00:14 $
+    $Date: 2004-08-01 13:00:14 $
     $Revision: 1.12 $
  */
 #include <stdio.h>

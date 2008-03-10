@@ -1,0 +1,93 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head><title>R: Parallel Execute</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<link rel="stylesheet" type="text/css" href="../../R.css">
+</head><body>
+
+<table width="100%" summary="page for PE {taskPR}"><tr><td>PE {taskPR}</td><td align="right">R Documentation</td></tr></table>
+<h2>Parallel Execute</h2>
+
+
+<h3>Description</h3>
+
+<p>
+Attempts to execute the given expression through the parallel engine.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+PE(x, global=FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>x</code></td>
+<td>
+expression to execute in background/parallel </td></tr>
+<tr valign="top"><td><code>global</code></td>
+<td>
+should this command be executed globally? </td></tr>
+</table>
+
+<h3>Details</h3>
+
+<p>
+The parallel engine takes the given expression and tries to execute it
+on a worker process (which may be on a remote system).  It will be
+executed in the background and possibly in parallel with other PE calls.
+</p>
+<p>
+Only a limited number of jobs can be run through the parallel engine at
+once.  If that number is exceeded, then the PE call will block until some
+of the jobs have finished.
+</p>
+<p>
+<EM>The given expression <STRONG>must</STRONG> be of the form "out &lt;- f(...)".</EM>
+</p>
+<p>
+When code{global} is true, the command is executed globally.  This does
+several things.  First, the parallel engine will wait until all workers
+are free before started to execute the command.  Second, the command will
+be executed on all worker processes simultaneously.  Third, the output of
+the command will NOT be deleted from the worker processes' workspaces (as
+is usually done).  This "global execute" functionality is designed for
+loading libraries or defining functions, and not for the parallel
+execution of common commands.
+</p>
+
+
+<h3>See Also</h3>
+
+<p>
+<code><a href="SetupPE.html">StartPE</a></code>  For enabling the parallel engine.
+<code><a href="POBJ.html">POBJ</a></code>  For returning background jobs to the main process.
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+## Not run: 
+# If you have MPI running
+StartPE(2)
+
+x = matrix(rnorm(128 * 128), 128, 128)
+
+PE( a &lt;- svd(x) )
+PE( b &lt;- solve(x) )
+PE( y &lt;- b %*% a$u )
+POBJ( y )
+str(y)
+StopPE()
+## End(Not run)
+</pre>
+
+
+
+<hr><div align="center">[Package <em>taskPR</em> version 0.30 <a href="00Index.html">Index]</a></div>
+
+</body></html>

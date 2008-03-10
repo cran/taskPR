@@ -15,7 +15,7 @@
 *   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 **************************************************************************** */
 /*  $Author: bauer $
-    $Date: 2004/07/09 13:03:59 $
+    $Date: 2004-07-09 13:03:59 $
     $Revision: 1.4 $
  */
 #ifndef _HASHTABLE_H_

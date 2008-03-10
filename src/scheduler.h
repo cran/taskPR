@@ -18,14 +18,21 @@
  * Contains the structure definitions used by the scheduler (and peval and 
  * the worker threads).
  */
-/*  $Author: bauer $
-    $Date: 2004/08/01 13:00:14 $
-    $Revision: 1.18 $
+/*  $Author: david $
+    $Date: 2008-03-03 19:28:48 $
+    $Revision: 1.20 $
  */
 #ifndef _SCHEDULER_H_
 #define _SCHEDULER_H_
 
-#include <pthread.h>
+#ifdef BENCHMARK_PENGINE
+#include <sys/time.h>
+#include <time.h>
+static struct timeval _tv_tmp;
+#define GETTIME(y) (gettimeofday(&_tv_tmp, NULL), (double) (_tv_tmp).tv_sec * 1.0e6 + (double) (_tv_tmp).tv_usec)
+#endif
+
+// #include <pthread.h>
 #include <Rinternals.h>
 
 #define Dprintf(x) ((void)((1 < iGlobalParallelEngineEnabled) ? printf x : 0))
