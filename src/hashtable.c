@@ -243,7 +243,7 @@ int HCreate(size_t nel, GE_HashTbl *hpH) {
 	*hpH = (GE_node **) ((char *) malloc(sizeof(GE_node *) * nel +
 			sizeof(size_t)) + sizeof(size_t));
 	if (*hpH == NULL) {
-		fprintf(stderr, "%s:%d: ERROR: Failed to allocate memory (%d bytes)\n",
+		fprintf(stderr, "%s:%d: ERROR: Failed to allocate memory (%lu bytes)\n",
 				__FILE__, __LINE__, sizeof(GE_node *) * nel + sizeof(size_t));
 		return -2;
 	}

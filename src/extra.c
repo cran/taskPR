@@ -572,7 +572,7 @@ void my_setVar(SEXP symbol, SEXP value, SEXP rho) {
  * *************************************************************************
  * *************************************************************************
  */
-                                                                                
+#if 0
 int Decompose1( SEXP sxIn );
                                                                                 
 /* Decompose function from rfunctions.c */
@@ -749,4 +749,5 @@ int Decompose1( SEXP sxIn ) {
     --iIndent;
     return 0;
 }
+#endif
 

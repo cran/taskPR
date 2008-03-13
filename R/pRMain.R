@@ -8,7 +8,7 @@ StartPE <- function(num = 2, port = 32000, verbose=0, spawn=TRUE) {
 		ret = 0
 		.C("R_SpawnMPIProcesses", as.character(prog), as.integer(num),
 			as.character(arg), as.integer(ret), PACKAGE="taskPR")
-		if (ret < 0) error("Processing spawning via MPI failed.  Startup aborted.")
+		if (ret < 0) stop("Processing spawning via MPI failed.  Startup aborted.")
 	}
     s = 0 * (1:num)
 	# .C("ExtInit", PACKAGE="base")

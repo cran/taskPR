@@ -1,5 +1,0 @@
-PE                      Parallel Execute
-POBJ                    Parallel Object (Return a Parallel Objection to
-                        R's workspace)
-StartPE                 Start/Stop Parallel Execution
-StartWorker             Start Parallel-R Worker Process
