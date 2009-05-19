@@ -775,10 +775,10 @@ int ReceivedFinishedJob(job_node *jnpNode, int iMSocket, int iWSocket) {
  */
 int SchedulerLoop(int iNumWorkers, int *ipSockets) {
 	int iMaxFD = -1;
-	fd_set fdsRead, fdsAll;
 	int i;
 	int bDone = 0;
 	int bAlmostDone = 0;
+	fd_set fdsRead, fdsAll;
 
 	FD_ZERO(&fdsAll);
 

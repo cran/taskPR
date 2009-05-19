@@ -70,3 +70,8 @@ There are two options for starting the parallel/remote engine.
   Output "a" from the above parallel task is retrieved by, but NOT returned
   from the POBJ function.
 
+(iii) Other Notes:
+-----------------------------
+TaskPR uses the TCP_CORK and TCP_QUICKACK options when available.
+Empirical testing shows that the addition of these options can provide a dramatic speed-up in some circumstances.  Unfortunately, these are Linux extensions that may not be available on other systems.  (Or they may have different names, such as TCP_NOPUSH instead of TCP_CORK; the behavior may not match exactly, though.)
+

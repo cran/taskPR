@@ -17,8 +17,8 @@
 /* peval.c  Parallel Evalution */
 /* All functions in this file are only executed by the MAIN thread! */
 /*  $Author: david $
-	$Date: 2008-03-03 19:28:13 $
-	$Revision: 1.54 $
+	$Date: 2009-05-19 16:24:47 $
+	$Revision: 1.56 $
  */
 #include <stdio.h>
 #include <Rinternals.h>
@@ -37,7 +37,7 @@ void *StartWorkerLoop(void *vpSocket);
 void *StartFakeWorkerLoop(void *vpSocket);
 char **FindInputs1(SEXP sxIn, char **cppCurrentList, int *ipListSize);
 SEXP R_serialize(SEXP object, SEXP icon, SEXP ascii, SEXP fun);
-//SEXP R_unserialize(SEXP icon, SEXP fun);
+SEXP R_unserialize(SEXP icon, SEXP fun);
 SEXP My_unserialize(SEXP icon);
 SEXP My_serialize(SEXP object, SEXP ascii);
 int my_remove(char *cpName, SEXP rho);
@@ -60,11 +60,11 @@ int ParallelExecute(SEXP s, int iSocket, int iGlobal, SEXP rho) {
 		return -1;
 	}
 
-//	printf("Begining ParallelExecute at %f\n", GETTIME());
+/*	printf("Begining ParallelExecute at %f\n", GETTIME()); */
 	/* Generate a job packet from a job (given as a LANGSXP) */
 	jppPacket = CreateAndPopulateJobPacket(s, rho, iGlobal);
 
-//	printf("Job created at %f\n", GETTIME());
+/*	printf("Job created at %f\n", GETTIME()); */
 	/* Send (a pointer to) the packet to the scheduler. */
 	write(iSocket, &jppPacket, sizeof(job_packet *));
 
@@ -73,7 +73,7 @@ int ParallelExecute(SEXP s, int iSocket, int iGlobal, SEXP rho) {
 	 * thread */
 	iWait = SerializeDataRequest(jppPacket, rho, iSocket);
 
-//	printf("Job %p serialized at %f\n", jppPacket, GETTIME());
+/*	printf("Job %p serialized at %f\n", jppPacket, GETTIME()); */
 	/* Note: It is probably bad form to reference the copy of the name from
 	 * the job_packet here (after it has been sent to the scheduler.  Of
 	 * course, I do the same thing above with cppInVars.  It is safe because
@@ -460,7 +460,11 @@ SEXP ReturnResult(data_packet *dpResult, char *cpName, SEXP rho) {
 	memcpy(RAW(sxResult), dpResult->vpData, dpResult->iLen);
 
 	/* Unserialize the output and install it into R's workspace. */
+#ifdef PARALLEL_R_PACKAGE
 	PROTECT(sxTemp = My_unserialize(sxResult));
+#else
+	PROTECT(sxTemp = R_unserialize(sxResult, R_NilValue));
+#endif
 	sxExtPtr = findVar(install(cpName), rho);
 	if (sxExtPtr == R_NilValue) {
 		printf("PEval: Failed to find ExtPtr placeholder\n");

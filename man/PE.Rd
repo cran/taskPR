@@ -22,7 +22,7 @@ PE(x, global=FALSE)
 
 	\emph{The given expression \strong{must} be of the form "out <- f(...)".}
 
-	When code{global} is true, the command is executed globally.  This does
+	When \code{global} is true, the command is executed globally.  This does
 	several things.  First, the parallel engine will wait until all workers
 	are free before started to execute the command.  Second, the command will
 	be executed on all worker processes simultaneously.  Third, the output of

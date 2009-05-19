@@ -19,8 +19,8 @@
  * the worker threads).
  */
 /*  $Author: david $
-    $Date: 2008-03-03 19:28:48 $
-    $Revision: 1.20 $
+    $Date: 2009-05-19 16:24:47 $
+    $Revision: 1.21 $
  */
 #ifndef _SCHEDULER_H_
 #define _SCHEDULER_H_
@@ -32,7 +32,7 @@ static struct timeval _tv_tmp;
 #define GETTIME(y) (gettimeofday(&_tv_tmp, NULL), (double) (_tv_tmp).tv_sec * 1.0e6 + (double) (_tv_tmp).tv_usec)
 #endif
 
-// #include <pthread.h>
+/* #include <pthread.h> */
 #include <Rinternals.h>
 
 #define Dprintf(x) ((void)((1 < iGlobalParallelEngineEnabled) ? printf x : 0))

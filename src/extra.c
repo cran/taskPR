@@ -20,15 +20,12 @@
  *  version.
  */
 /*  $Author: david $
-    $Date: 2008-03-02 03:44:21 $
-    $Revision: 1.15 $
+    $Date: 2009-05-19 16:23:40 $
+    $Revision: 1.17 $
  */
 #include <unistd.h>
-//#define USE_RINTERNALS
 #include <R.h>
 #include <Rinternals.h>
-//#include "Defn.h"
-//#include "Rconnections.h"
 #include "peval.h"
 
 char **FindInputs( SEXP sxIn );
@@ -40,10 +37,6 @@ SEXP (RStrLength)(SEXP x) {
 	if (TYPEOF(x) == STRSXP) return ScalarInteger(LENGTH(STRING_ELT(x, 0)));
 	else return ScalarInteger(-1);
 }
-
-// SEXP mkPRIMSXP(int offset, int eval);
-// int StrToInternal(const char *s);
-// SEXP do_remove(SEXP call, SEXP op, SEXP args, SEXP rho);
 
 int my_remove(char *cpName, SEXP rho) {
 	warning("WARNING:  stub function my_remove called on variable %s\n", cpName);
@@ -511,18 +504,19 @@ SEXP My_unserialize(SEXP icon) {
 SEXP My_serialize(SEXP object, SEXP ascii) {
 	struct R_outpstream_st out;
 	R_pstream_format_t type;
-
-	if (asLogical(ascii)) type = R_pstream_ascii_format;
-	else type = R_pstream_xdr_format; /**** binary or ascii if no XDR? */
-//	RCNTXT cntxt;
 	struct membuf_st mbs;
 	SEXP val;
 
+	if (asLogical(ascii)) type = R_pstream_ascii_format;
+	else type = R_pstream_xdr_format; /**** binary or ascii if no XDR? */
+/*	RCNTXT cntxt; */
+
 	/* set up a context which will free the buffer if there is an error */
-//	begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_BaseEnv, R_BaseEnv,
-//			R_NilValue, R_NilValue);
-//	cntxt.cend = &free_mem_buffer;
-//	cntxt.cenddata = &mbs;
+/*	begincontext(&cntxt, CTXT_CCODE, R_NilValue, R_BaseEnv, R_BaseEnv,
+			R_NilValue, R_NilValue);
+	cntxt.cend = &free_mem_buffer;
+	cntxt.cenddata = &mbs;
+ */
 
 	mbs.count = 0;
 	mbs.size = 0;
@@ -536,10 +530,9 @@ SEXP My_serialize(SEXP object, SEXP ascii) {
 
 	/* end the context after anything that could raise an error but before
 	 *        calling OutTerm so it doesn't get called twice */
-//	endcontext(&cntxt);
+/*	endcontext(&cntxt); */
 
 	return val;
-
 }
 
 /* **********************************************************************

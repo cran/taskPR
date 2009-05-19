@@ -1,6 +1,7 @@
 # -*- Makefile -*-  vim : ft = make
 
-PKG_CFLAGS   = -g -O2 -pthread -DHAVE_MPI  -Wall -I/usr/include/lam -DPARALLEL_R_PACKAGE
+PKG_CFLAGS   = -g -O2 -pthread -DHAVE_MPI  -Wall -I/usr/include/lam -DPARALLEL_R_PACKAGE -ansi
 PKG_LIBS     =  -lmpi  -L/usr/lib/lam 
 MPSPAWN      = mpspawn.o
+CC=gcc
 

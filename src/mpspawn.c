@@ -18,8 +18,8 @@
  * 		and then establish a communications link with them.
  */
 /*	$Author: david $
-	$Date: 2008-03-03 19:26:25 $
-	$Revision: 1.17 $
+	$Date: 2009-05-19 16:10:37 $
+	$Revision: 1.19 $
  */
 
 #include <stdio.h>
@@ -186,9 +186,8 @@ SEXP PRWorkerInit(void) {
 	fflush(stdout);
 
 	if (mcParent == MPI_COMM_NULL) {
-		char *cpNoParent = "No Parent found.  This routine can only be"
-				" called by a spawned Parallel-R worker process\n";
-		fprintf(stderr, cpNoParent);
+		fprintf(stderr, "No Parent found.  This routine can only be"
+				" called by a spawned Parallel-R worker process\n");
 		return R_NilValue;
 	}
 

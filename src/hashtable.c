@@ -21,9 +21,9 @@
  * ENTRY structure removed.  (Actually, it is closer to the GNU version.)
  * Written because the !*@^%! standard doesn't support deleting entries!!
  */
-/*  $Author: bauer $
-    $Date: 2004-08-01 13:00:14 $
-    $Revision: 1.12 $
+/*  $Author: david $
+    $Date: 2008-03-13 14:34:52 $
+    $Revision: 1.13 $
  */
 #include <stdio.h>
 #include <stdlib.h>
